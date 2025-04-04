@@ -40,7 +40,5 @@ python workday_progress.py
 ![image](https://github.com/user-attachments/assets/18dd7efd-fe15-4ece-85b0-fb1fe95c83c4)
 
 ## Будущие улучшения (по желанию)
-- Учёт официальных праздников.
 - Интерфейс с календарём.
-- Поддержка временных зон.
 - GUI-версия (например, с tkinter или PyQt).
