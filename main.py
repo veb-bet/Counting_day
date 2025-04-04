@@ -1,9 +1,11 @@
 import datetime
 import pytz
 import calendar
-import sys
+import tkinter as tk
+from tkinter import ttk
+from tkcalendar import Calendar
 
-# Список официальных праздников (можно расширять вручную или загружать из API)
+# Список праздников
 HOLIDAYS = [
     datetime.date(2025, 1, 1),   # Новый год
     datetime.date(2025, 1, 2),   # Новогодние каникулы
@@ -36,60 +38,52 @@ def count_workdays(start_date, end_date, holidays=None):
     
     return workdays_total
 
-def print_progress_bar(current, total, bar_length=30):
-    percent = current / total if total != 0 else 1
-    filled_length = int(bar_length * percent)
-    bar = '█' * filled_length + '-' * (bar_length - filled_length)
-    print(f"\rПрогресс: |{bar}| {int(percent * 100)}% ({current}/{total} рабочих дней)", end='')
+def calculate_workdays():
+    start_date = cal_start.selection_get()
+    end_date = cal_end.selection_get()
+    true_start = min(start_date, end_date)
+    true_end = max(start_date, end_date)
+    today = datetime.datetime.now().date()
 
-def get_date(prompt, use_today_if_empty=True, tz=None):
-    user_input = input(prompt).strip()
-    if user_input == "":
-        if use_today_if_empty:
-            return datetime.datetime.now(tz).date()
-        else:
-            return None
-    try:
-        return datetime.datetime.strptime(user_input, "%Y-%m-%d").date()
-    except ValueError:
-        print("Неверный формат даты. Используется сегодняшняя дата.")
-        return datetime.datetime.now(tz).date()
+    total = count_workdays(true_start, true_end, HOLIDAYS)
+    passed = count_workdays(true_start, today - datetime.timedelta(days=1), HOLIDAYS) if today > true_start else 0
 
-def select_timezone():
-    print("Выберите временную зону (например, Europe/Moscow или America/New_York).")
-    tz_input = input("Введите временную зону или нажмите Enter для Europe/Moscow: ").strip()
-    try:
-        return pytz.timezone(tz_input) if tz_input else pytz.timezone("Europe/Moscow")
-    except pytz.UnknownTimeZoneError:
-        print("Неизвестная временная зона. Используется Europe/Moscow.")
-        return pytz.timezone("Europe/Moscow")
+    if total > 0:
+        percent = passed / total
+    else:
+        percent = 1
 
-def main():
-    while True:
-        print("\n=== Расчёт оставшихся рабочих дней ===")
-        
-        tz = select_timezone()
-        
-        start_date = get_date("Введите дату начала (ГГГГ-ММ-ДД) или Enter для сегодняшней: ", tz=tz)
-        end_date = get_date("Введите дату окончания (ГГГГ-ММ-ДД) или Enter для 2025-07-06: ", use_today_if_empty=False, tz=tz)
-        if end_date is None:
-            end_date = datetime.date(2025, 7, 6)
+    progress_var.set(percent)
+    label_result.config(text=f"Рабочих дней всего: {total}\nПрошло: {passed}")
+    progress_label.config(text=f"{int(percent * 100)}%")
 
-        true_start = min(start_date, end_date)
-        true_end = max(start_date, end_date)
-        today = datetime.datetime.now(tz).date()
+# --- Интерфейс ---
+root = tk.Tk()
+root.title("Рабочие дни между датами")
 
-        total_workdays = count_workdays(true_start, true_end, holidays=HOLIDAYS)
-        past_workdays = count_workdays(true_start, today - datetime.timedelta(days=1), holidays=HOLIDAYS) if today > true_start else 0
+# Календарь начала
+ttk.Label(root, text="Дата начала:").grid(row=0, column=0, padx=10, pady=5)
+cal_start = Calendar(root, selectmode='day', date_pattern='yyyy-mm-dd')
+cal_start.grid(row=1, column=0, padx=10, pady=5)
 
-        print_progress_bar(past_workdays, total_workdays)
-        print()  # перенос строки
+# Календарь окончания
+ttk.Label(root, text="Дата окончания:").grid(row=0, column=1, padx=10, pady=5)
+cal_end = Calendar(root, selectmode='day', date_pattern='yyyy-mm-dd')
+cal_end.grid(row=1, column=1, padx=10, pady=5)
 
-        exit_choice = input("Хотите выйти? (да/нет): ").strip().lower()
-        if exit_choice in ("да", "д", "y", "yes"):
-            print("Выход из программы. Пока!")
-            break
+# Кнопка расчета
+ttk.Button(root, text="Рассчитать", command=calculate_workdays).grid(row=2, column=0, columnspan=2, pady=10)
 
-# Точка входа
-if __name__ == "__main__":
-    main()
+# Прогресс-бар
+progress_var = tk.DoubleVar()
+progress_bar = ttk.Progressbar(root, maximum=1.0, variable=progress_var, length=300)
+progress_bar.grid(row=3, column=0, columnspan=2, pady=5)
+
+progress_label = ttk.Label(root, text="0%")
+progress_label.grid(row=4, column=0, columnspan=2)
+
+# Результат
+label_result = ttk.Label(root, text="Выберите даты и нажмите 'Рассчитать'")
+label_result.grid(row=5, column=0, columnspan=2, pady=10)
+
+root.mainloop()
