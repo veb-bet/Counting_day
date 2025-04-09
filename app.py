@@ -176,4 +176,6 @@ ttk.Button(root, text="Добавить праздник", command=add_custom_ho
 
 # Отображение списка праздников
 label_holidays = ttk.Label(root, text="Праздники:\n")
-label_h
+label_holidays.grid(row=6, column=1, rowspan=3, padx=10, pady=5)
+
+root.mainloop()
